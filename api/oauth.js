@@ -30,7 +30,11 @@ function challenge(verifier) {
 }
 
 function signature(discordId) {
-  return b64url(crypto.createHmac("sha256", required("DISCORD_OAUTH_SECRET")).update(discordId).digest());
+  return b64url(crypto.createHmac("sha256", required("DISCORD_OAUTH_SECRET")).update(String(discordId)).digest());
+}
+
+function legacyHexSignature(discordId) {
+  return crypto.createHmac("sha256", required("DISCORD_OAUTH_SECRET")).update(String(discordId)).digest("hex");
 }
 
 function validSignature(a, b) {
@@ -42,6 +46,10 @@ function validSignature(a, b) {
   } catch {
     return false;
   }
+}
+
+function validDiscordSignature(discordId, supplied) {
+  return validSignature(supplied, signature(discordId)) || validSignature(supplied, legacyHexSignature(discordId));
 }
 
 function sendJson(res, status, body) {
@@ -59,6 +67,17 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function accountResponse(record) {
+  return {
+    linked: Boolean(record),
+    account: record || null,
+    roblox_id: record?.roblox_id || null,
+    roblox_username: record?.roblox_username || null,
+    display_name: record?.display_name || null,
+    linked_at: record?.linked_at || null
+  };
+}
+
 export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
@@ -69,7 +88,7 @@ export default async function handler(req, res) {
       const discordId = url.searchParams.get("discord_user_id");
       const sig = url.searchParams.get("sig");
 
-      if (!discordId || !validSignature(sig, signature(discordId))) {
+      if (!discordId || !validDiscordSignature(discordId, sig)) {
         return sendJson(res, 401, { error: "Invalid authorization." });
       }
 
@@ -195,11 +214,11 @@ export default async function handler(req, res) {
       return res.end(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Roblox Linked</title><style>body{font-family:system-ui;background:#111;color:#fff;display:grid;place-items:center;min-height:100vh;margin:0}main{text-align:center;max-width:560px;padding:30px}p{color:#aaa}</style></head><body><main><h1>Roblox account linked</h1><p>You can return to Discord.</p><p><strong>${escapeHtml(displayName)}</strong> (@${escapeHtml(username)})</p></main></body></html>`);
     }
 
-    if (action === "lookup" || action === "unlink") {
+    if (action === "lookup" || action === "lookup-roblox" || action === "unlink") {
       const discordId = url.searchParams.get("discord_user_id");
       const sig = req.headers["x-discord-oauth-signature"];
 
-      if (!discordId || !validSignature(sig, signature(discordId))) {
+      if (!discordId || !validDiscordSignature(discordId, sig)) {
         return sendJson(res, 401, { error: "Unauthorized." });
       }
 
@@ -209,12 +228,24 @@ export default async function handler(req, res) {
           .eq("discord_id", String(discordId))
           .maybeSingle();
         if (error) throw error;
-        return sendJson(res, 200, { linked: Boolean(record), account: record || null });
+        return sendJson(res, 200, accountResponse(record));
+      }
+
+      if (action === "lookup-roblox") {
+        const username = url.searchParams.get("roblox_username");
+        if (!username) return sendJson(res, 400, { error: "Missing roblox_username." });
+
+        const { data: record, error } = await db.from("oauth_links")
+          .select("discord_id, roblox_id, roblox_username, display_name, linked_at")
+          .ilike("roblox_username", username)
+          .maybeSingle();
+        if (error) throw error;
+        return sendJson(res, 200, accountResponse(record));
       }
 
       const { error } = await db.from("oauth_links").delete().eq("discord_id", String(discordId));
       if (error) throw error;
-      return sendJson(res, 200, { success: true });
+      return sendJson(res, 200, { success: true, deleted: true });
     }
 
     return sendJson(res, 404, { error: "Unknown action." });
