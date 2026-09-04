@@ -13,6 +13,8 @@ A small Vercel service for linking a Discord user to a Roblox account using Robl
 
 `SUPABASE_SECRET_KEY` is server-only and must never be exposed in frontend code or committed to GitHub.
 
+The Discord bot must use the same `DISCORD_OAUTH_SECRET` value as this service.
+
 ## Supabase tables
 
 Run this SQL in Supabase SQL Editor:
@@ -36,8 +38,8 @@ create table if not exists oauth_links (
   linked_at timestamptz not null default now()
 );
 
-create index if not exists oauth_links_discord_id_idx on oauth_links (discord_id);
-create index if not exists oauth_links_roblox_id_idx on oauth_links (roblox_id);
+create index if not exists oauth_links_discord_id_idx on oauth_links(discord_id);
+create index if not exists oauth_links_roblox_id_idx on oauth_links(roblox_id);
 ```
 
 The service uses the Supabase server-side secret key, so the database tables do not need a browser-facing Supabase client.
@@ -56,6 +58,9 @@ Register that exact URI in the Roblox OAuth application.
 - `/start?discord_user_id=...&sig=...`
 - `/callback`
 - `/lookup?discord_user_id=...` with `x-discord-oauth-signature`
+- `/lookup-roblox?discord_user_id=...&roblox_username=...` with `x-discord-oauth-signature`
 - `/unlink?discord_user_id=...` with `x-discord-oauth-signature`
+
+The API returns both the `account` object and top-level account fields from `/lookup` for compatibility with the Discord bot.
 
 Roblox OAuth uses authorization code + PKCE with the `openid profile` scopes.
