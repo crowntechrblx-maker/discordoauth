@@ -1,0 +1,12 @@
+{
+  "name": "discord-roblox-link",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@upstash/redis": "^1.38.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.8.27"
+  }
+}

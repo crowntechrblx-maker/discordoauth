@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/start", "destination": "/api/oauth?action=start" },
+    { "source": "/callback", "destination": "/api/oauth?action=callback" },
+    { "source": "/lookup", "destination": "/api/oauth?action=lookup" },
+    { "source": "/unlink", "destination": "/api/oauth?action=unlink" }
+  ]
+}
