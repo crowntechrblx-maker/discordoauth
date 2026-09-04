@@ -4,6 +4,7 @@
     { "source": "/callback", "destination": "/api/oauth?action=callback" },
     { "source": "/lookup", "destination": "/api/oauth?action=lookup" },
     { "source": "/lookup-roblox", "destination": "/api/oauth?action=lookup-roblox" },
-    { "source": "/unlink", "destination": "/api/oauth?action=unlink" }
+    { "source": "/unlink", "destination": "/api/oauth?action=unlink" },
+    { "source": "/management", "destination": "/api/management" }
   ]
 }
