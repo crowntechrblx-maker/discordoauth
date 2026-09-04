@@ -1,10 +1,13 @@
 {
   "name": "discord-roblox-link",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
+  "scripts": {
+    "build": "echo Build complete"
+  },
   "dependencies": {
-    "@upstash/redis": "^1.38.0"
+    "@supabase/supabase-js": "^2.57.4"
   },
   "devDependencies": {
     "@vercel/node": "^5.8.27"
