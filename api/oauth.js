@@ -67,6 +67,12 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function sendEntryPage(res) {
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  return res.end(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>[PS] SIS Activity System</title><style>body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#111;color:#fff;display:grid;place-items:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box}main{max-width:650px;width:100%;background:#191919;border:1px solid #303030;border-radius:16px;padding:36px;box-sizing:border-box;box-shadow:0 20px 60px rgba(0,0,0,.35)}h1{margin:0 0 10px;font-size:30px}h2{margin:28px 0 10px;font-size:18px}p,li{color:#bdbdbd;line-height:1.6}ul{padding-left:22px}.badge{display:inline-block;color:#fff;background:#2b2b2b;border:1px solid #3b3b3b;border-radius:999px;padding:6px 10px;font-size:13px;margin-bottom:18px}.notice{background:#202020;border-left:3px solid #777;padding:14px 16px;border-radius:8px;margin-top:24px}</style></head><body><main><div class="badge">Blume Corporation</div><h1>[PS] SIS Activity System</h1><p>Secure Roblox account linking for the SIS Activity System.</p><h2>What does this application do?</h2><p>This service allows members to securely associate their Roblox account with their Discord account for SIS Activity System features.</p><h2>Information accessed</h2><ul><li>Roblox User ID</li><li>Roblox username</li><li>Roblox display name</li></ul><p>We do not request or store your Roblox password.</p><div class="notice"><strong>How to link your account</strong><p>Start the linking process using the <strong>/link</strong> command in the SIS Activity System Discord server.</p></div></main></body></html>`);
+}
+
 function accountResponse(record) {
   return {
     linked: Boolean(record),
@@ -87,6 +93,12 @@ export default async function handler(req, res) {
     if (action === "start") {
       const discordId = url.searchParams.get("discord_user_id");
       const sig = url.searchParams.get("sig");
+
+      // The public Roblox OAuth Entry Link must be reviewable on its own.
+      // Only a Discord-generated signed URL is allowed to start an OAuth flow.
+      if (!discordId && !sig) {
+        return sendEntryPage(res);
+      }
 
       if (!discordId || !validDiscordSignature(discordId, sig)) {
         return sendJson(res, 401, { error: "Invalid authorization." });
